@@ -1,19 +1,20 @@
 import pygame, sys, random
 from pygame.locals import *
 
-# Constants/Settings ----------------------
+# Constants/Settings -----------------------------------------------------------
 
 HUMAN_PLAYER               = True
 SHOW_BOARD = HUMAN_PLAYER or True
 BOARD_SIZE                 = 32
-FPS                        = 5
+BOX_SIZE                   = 20
+FPS                        = 10
 SEED                       = 1
 WHITE                      = (255,255,255)
 GREY                       = (127,127,127)
 BLACK                      = (  0,  0,  0)
 RED                        = (255,  0,  0)
 
-# Class definitions --------------
+# Class definitions ------------------------------------------------------------
 
 class Box:
     def __init__(self, x, y):
@@ -43,7 +44,7 @@ class Box:
 
     def draw(self, screen, colour):
         # Draw the box to screen
-        rect = pygame.Rect(10*self.x, 10*self.y, 10, 10)
+        rect = pygame.Rect(BOX_SIZE * self.x, BOX_SIZE * self.y, BOX_SIZE, BOX_SIZE)
         pygame.draw.rect(screen, colour, rect)
 
     def rand():
@@ -72,17 +73,29 @@ class Snake:
         self.length = 1
         self.dir = (0, -1) # Up
 
+    def set_dir(self):
+        if HUMAN_PLAYER:
+            if last_press == K_UP:
+                if self.dir != (0, 1): self.dir = (0, -1)
+            elif last_press == K_DOWN:
+                if self.dir != (0, -1): self.dir = (0, 1)
+            elif last_press == K_LEFT:
+                if self.dir != (1, 0): self.dir = (-1, 0)
+            elif last_press == K_RIGHT:
+                if self.dir != (-1, 0): self.dir = (1, 0)
+        else:
+            # Run neural net
+            pass
+        return (0, 0)
+
     def move(self, food):
         # Move the snake up, down, left, or right
-        new_dir = get_input()
-        if new_dir[0] != -1 * self.dir[0] and new_dir[1] != -1 * self.dir[1] and new_dir != (0, 0):
-            # Change move direction
-            self.dir = new_dir
+        self.set_dir()
         new_head = self.head + self.dir
 
         if new_head in self.body[:-1] or -1 in new_head.coords or BOARD_SIZE in new_head.coords:
             # Collision
-            self.alive = False
+            self.isAlive = False
 
         elif new_head == food:
             # Grow snake
@@ -101,19 +114,9 @@ class Snake:
         # Draw the snake to the display surface
         self.head.draw(screen, WHITE)
         for box in self.body:
-            draw_box(screen, box, GREY)
+            box.draw(screen, GREY)
 
-# Helper functions ---------------
-
-# Get input from human or neural net
-def get_input():
-    if HUMAN_PLAYER:
-        # Check if arrow keys were pressed
-        pass
-    else:
-        # Run neural net
-        pass
-    return (0, 0)
+# Helper functions -------------------------------------------------------------
 
 # Reset game after game over
 def reset_game():
@@ -126,28 +129,32 @@ def reset_game():
 def clear_screen(screen):
     screen.fill(BLACK)
 
-# Setup --------------------------
+# Setup ------------------------------------------------------------------------
 
 if SHOW_BOARD:
     pygame.init()
-    screen = pygame.display.set_mode((BOARD_SIZE*10, BOARD_SIZE*10))
+    screen = pygame.display.set_mode((BOARD_SIZE*BOX_SIZE, BOARD_SIZE*BOX_SIZE))
     pygame.display.set_caption("Snake game")
     clock = pygame.time.Clock()
+    last_press = K_UP
 
 reset_game()
 
-# Main game loop -----------------
+# Main game loop ---------------------------------------------------------------
 
 while True:
-    if snek.isAlive == True:
-        snek.move(apple)
-
     if SHOW_BOARD:
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == KEYDOWN and event.key in (K_UP, K_DOWN, K_LEFT, K_RIGHT):
+                last_press = event.key
 
+    if snek.isAlive:
+        snek.move(apple)
+
+    if SHOW_BOARD:
         clear_screen(screen)
         snek.draw(screen)
         apple.draw(screen)
