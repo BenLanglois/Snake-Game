@@ -6,8 +6,8 @@ Goal: Create a snake game in python3 using the pygame library, then create a neu
 Todo:
 - [x] Create game board
 - [x] Create Snake object and corresponding methods
-- [ ] Recieve input from player
-- [ ] Write game logic
+- [x] Recieve input from player
+- [ ] Polish game (Restart after death, display score)
 - [ ] Create neural network
 - [ ] Train neural network
 - [ ] Output log to a text file
