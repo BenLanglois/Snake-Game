@@ -1,5 +1,5 @@
 # Snake-Game
-###Work in progress
+### Work in progress
 
 Goal: Create a snake game in python3 using the pygame library, then create a neural network to play the game.
 
