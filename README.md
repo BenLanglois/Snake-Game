@@ -7,7 +7,7 @@ Todo:
 - [x] Create game board
 - [x] Create Snake object and corresponding methods
 - [x] Recieve input from player
-- [ ] Polish game (Restart after death, display score)
+- [x] Polish game (Restart after death, display score)
 - [ ] Create neural network
 - [ ] Train neural network
 - [ ] Output log to a text file
