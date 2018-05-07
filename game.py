@@ -6,7 +6,7 @@ from pygame.locals import *
 HUMAN_PLAYER               = True
 SHOW_BOARD = HUMAN_PLAYER or True
 BOARD_SIZE                 = 32
-BOX_SIZE                   = 20
+BOX_SIZE                   = 15
 FPS                        = 10
 SEED                       = 1
 WHITE                      = (255,255,255)
@@ -42,10 +42,10 @@ class Box:
         else:
             return NotImplemented
 
-    def draw(self, screen, colour):
+    def draw(self, surface, colour):
         # Draw the box to screen
         rect = pygame.Rect(BOX_SIZE * self.x, BOX_SIZE * self.y, BOX_SIZE, BOX_SIZE)
-        pygame.draw.rect(screen, colour, rect)
+        pygame.draw.rect(surface, colour, rect)
 
     def rand():
         return Box(random.randrange(BOARD_SIZE), random.randrange(BOARD_SIZE))
@@ -54,9 +54,9 @@ class Food(Box):
     def __init__(self, snake):
         self.move(snake)
 
-    def draw(self, screen):
+    def draw(self, surface):
         # Draw the food to the screen
-        Box.draw(self, screen, RED)
+        Box.draw(self, surface, RED)
 
     def move(self, snake):
         # Move the food to a new position after being eaten
@@ -73,7 +73,7 @@ class Snake:
         self.length = 1
         self.dir = (0, -1) # Up
 
-    def set_dir(self):
+    def _set_dir(self):
         if HUMAN_PLAYER:
             if last_press == K_UP:
                 if self.dir != (0, 1): self.dir = (0, -1)
@@ -90,7 +90,7 @@ class Snake:
 
     def move(self, food):
         # Move the snake up, down, left, or right
-        self.set_dir()
+        self._set_dir()
         new_head = self.head + self.dir
 
         if new_head in self.body[:-1] or -1 in new_head.coords or BOARD_SIZE in new_head.coords:
@@ -110,11 +110,11 @@ class Snake:
             self.head = new_head
             del self.body[0]
 
-    def draw(self, screen):
+    def draw(self, surface):
         # Draw the snake to the display surface
-        self.head.draw(screen, WHITE)
+        self.head.draw(surface, WHITE)
         for box in self.body:
-            box.draw(screen, GREY)
+            box.draw(surface, GREY)
 
 # Helper functions -------------------------------------------------------------
 
@@ -124,10 +124,6 @@ def reset_game():
     random.seed(SEED)
     snek = Snake()
     apple = Food(snek)
-
-# Fill the screen black
-def clear_screen(screen):
-    screen.fill(BLACK)
 
 # Setup ------------------------------------------------------------------------
 
@@ -155,7 +151,7 @@ while True:
         snek.move(apple)
 
     if SHOW_BOARD:
-        clear_screen(screen)
+        screen.fill(BLACK)
         snek.draw(screen)
         apple.draw(screen)
 
