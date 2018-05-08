@@ -14,7 +14,7 @@ LIGHT_BLUE = (109,158,237)
 HUMAN_PLAYER  = True
 SHOW_BOARD    = True
 BOARD_SIZE    = 32
-BOX_SIZE      = 15
+BOX_SIZE      = 20
 HUD_HEIGHT    = 40
 HUD_COLOUR    = LIGHT_BLUE
 TEXT_SIZE     = 30
@@ -48,8 +48,14 @@ class Box:
             return NotImplemented
 
     def __add__(self, other):
-        if type(other) == tuple and len(other) == 2:
-            return Box(self.x + other[0], self.y + other[1])
+        if type(other) == Direction:
+            return Box(self.x + other.x, self.y + other.y)
+        else:
+            return NotImplemented
+
+    def __sub__(self, other):
+        if type(other) == Direction:
+            return Box(self.x - other.x, self.y - other.y)
         else:
             return NotImplemented
 
@@ -76,28 +82,32 @@ class Food(Box):
             new_box = Box.rand()
         self.coords = new_box.coords
 
+class Direction:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+
 class Snake:
     def __init__(self):
         self.head = Box(BOARD_SIZE//2, BOARD_SIZE//2)
         self.body = []
         self.isAlive = True
         self.length = 1
-        self.dir = (0, -1) # Up
+        self.dir = UP
 
     def _set_dir(self):
         if HUMAN_PLAYER:
             if last_press == K_UP:
-                if self.dir != (0, 1): self.dir = (0, -1)
+                if self.dir != DOWN: self.dir = UP
             elif last_press == K_DOWN:
-                if self.dir != (0, -1): self.dir = (0, 1)
+                if self.dir != UP: self.dir = DOWN
             elif last_press == K_LEFT:
-                if self.dir != (1, 0): self.dir = (-1, 0)
+                if self.dir != RIGHT: self.dir = LEFT
             elif last_press == K_RIGHT:
-                if self.dir != (-1, 0): self.dir = (1, 0)
+                if self.dir != LEFT: self.dir = RIGHT
         else:
             # Run neural net
             pass
-        return (0, 0)
 
     def move(self, food):
         # Move the snake up, down, left, or right
@@ -126,6 +136,39 @@ class Snake:
         self.head.draw(surface, WHITE)
         for box in self.body:
             box.draw(surface, GREY)
+
+    def _dist_to_obstacle(self, dir):
+        cursor = self.head
+        cursor += dir
+        count = 1
+        while cursor not in self.body and cursor.x >= 0 and cursor.x < BOARD_SIZE and cursor.y >= 0 and cursor.y < BOARD_SIZE:
+            # Move cursor until it hits an obstacle
+            count += 1
+            cursor += dir
+        return count
+
+    def network_inputs(self, food):
+        # Returns neural net inputs in a dict
+        directions = [UP, RIGHT, DOWN, LEFT]
+        forward = self._dist_to_obstacle(self.dir)
+        left = self._dist_to_obstacle(directions[(directions.index(self.dir)-1)%4])
+        right = self._dist_to_obstacle(directions[(directions.index(self.dir)+1)%4])
+
+        if self.dir == UP:
+            food_side = food.x - self.head.x
+            food_front = self.head.y - food.y
+        elif self.dir == DOWN:
+            food_side = self.head.x - food.x
+            food_front = food.y - self.head.y
+        elif self.dir == LEFT:
+            food_side = self.head.y - food.y
+            food_front = self.head.x - food.x
+        elif self.dir == RIGHT:
+            food_side = food.y - self.head.y
+            food_front = food.x - self.head.x
+
+        return {"forward": forward, "left": left, "right": right, "food side": food_side, "food front": food_front}
+
 
 # Helper functions -------------------------------------------------------------
 
@@ -180,6 +223,12 @@ def update_hud(snake):
 
 SHOW_BOARD = HUMAN_PLAYER or SHOW_BOARD # Must SHOW_BOARD if HUMAN_PLAYER
 
+# Directions
+UP = Direction(0, -1)
+DOWN = Direction(0, 1)
+LEFT = Direction(-1, 0)
+RIGHT = Direction(1, 0)
+
 if SHOW_BOARD:
     pygame.init()
     # Surfaces
@@ -189,7 +238,7 @@ if SHOW_BOARD:
     game_board = pygame.Surface((BOARD_SIZE*BOX_SIZE, BOARD_SIZE*BOX_SIZE))
     hud = pygame.Surface((BOARD_SIZE*BOX_SIZE+BORDER_WIDTH*2, HUD_HEIGHT))
     hud_font = pygame.font.SysFont("Verdana", TEXT_SIZE)
-    # Clock-related
+    # Clock related
     clock = pygame.time.Clock()
     skip_frames = FPS/SNAKE_SPEED
     count_frames = 0
