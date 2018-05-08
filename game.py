@@ -21,7 +21,8 @@ TEXT_SIZE     = 30
 TEXT_COLOUR   = BLACK
 BORDER_WIDTH  = 5
 BORDER_COLOUR = WHITE
-FPS           = 10
+FPS           = 30
+SNAKE_SPEED   = 10
 SEED          = 1
 
 # Class definitions ------------------------------------------------------------
@@ -181,13 +182,18 @@ SHOW_BOARD = HUMAN_PLAYER or SHOW_BOARD # Must SHOW_BOARD if HUMAN_PLAYER
 
 if SHOW_BOARD:
     pygame.init()
+    # Surfaces
     screen = pygame.display.set_mode((BOARD_SIZE*BOX_SIZE+BORDER_WIDTH*2, BOARD_SIZE*BOX_SIZE+HUD_HEIGHT+BORDER_WIDTH*2))
+    screen.fill(BORDER_COLOUR)
+    pygame.display.set_caption("Snake game")
     game_board = pygame.Surface((BOARD_SIZE*BOX_SIZE, BOARD_SIZE*BOX_SIZE))
     hud = pygame.Surface((BOARD_SIZE*BOX_SIZE+BORDER_WIDTH*2, HUD_HEIGHT))
-    pygame.display.set_caption("Snake game")
-    clock = pygame.time.Clock()
     hud_font = pygame.font.SysFont("Verdana", TEXT_SIZE)
-    screen.fill(BORDER_COLOUR)
+    # Clock-related
+    clock = pygame.time.Clock()
+    skip_frames = FPS/SNAKE_SPEED
+    count_frames = 0
+    # Other
     if HUMAN_PLAYER:
         last_press = K_UP
 
@@ -197,6 +203,7 @@ reset_game()
 
 while True:
     if SHOW_BOARD:
+        # Receive user input
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.key == K_ESCAPE:
                 pygame.quit()
@@ -204,19 +211,26 @@ while True:
             elif HUMAN_PLAYER and event.type == KEYDOWN and event.key in (K_UP, K_DOWN, K_LEFT, K_RIGHT):
                 last_press = event.key
 
-    if snek.isAlive:
-        snek.move(apple)
-    else:
-        game_over()
+    if count_frames >= skip_frames:
+        count_frames -= skip_frames
+
+        # Run game logic
+        if snek.isAlive:
+            snek.move(apple)
+        else:
+            game_over()
+
+        if SHOW_BOARD:
+            update_hud(snek)
+            game_board.fill(BLACK)
+            snek.draw(game_board)
+            apple.draw(game_board)
+
+            screen.blit(hud, (0, 0))
+            screen.blit(game_board, (BORDER_WIDTH, HUD_HEIGHT+BORDER_WIDTH))
+
+            pygame.display.update()
 
     if SHOW_BOARD:
-        update_hud(snek)
-        game_board.fill(BLACK)
-        snek.draw(game_board)
-        apple.draw(game_board)
-
-        screen.blit(hud, (0, 0))
-        screen.blit(game_board, (BORDER_WIDTH, HUD_HEIGHT+BORDER_WIDTH))
-
-        pygame.display.update()
         clock.tick(FPS)
+        count_frames += 1
