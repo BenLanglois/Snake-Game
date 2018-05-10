@@ -1,5 +1,6 @@
 import pygame, sys, random
 from pygame.locals import *
+import network
 
 # Colours ----------------------------------------------------------------------
 
@@ -9,12 +10,12 @@ BLACK      = (  0,  0,  0)
 RED        = (255,  0,  0)
 LIGHT_BLUE = (109,158,237)
 
-# Settings ---------------------------------------------------------------------
+# Game settings ----------------------------------------------------------------
 
-HUMAN_PLAYER  = True
-SHOW_BOARD    = True
+HUMAN_PLAYER  = False
+SHOW_BOARD    = False
 BOARD_SIZE    = 32
-BOX_SIZE      = 20
+BOX_SIZE      = 10
 HUD_HEIGHT    = 40
 HUD_COLOUR    = LIGHT_BLUE
 TEXT_SIZE     = 30
@@ -22,8 +23,19 @@ TEXT_COLOUR   = BLACK
 BORDER_WIDTH  = 5
 BORDER_COLOUR = WHITE
 FPS           = 30
-SNAKE_SPEED   = 10
-SEED          = 1
+SNAKE_SPEED   = 30
+GAME_SEED     = 2
+
+# Network settings -------------------------------------------------------------
+
+NUM_NETWORKS    = 20
+MAX_AGE         = 100
+DOMINATION_RATE = 0.7
+MUTATION_RATE   = 0.05
+HIDDEN_LAYERS   = 2
+HIDDEN_NODES    = 8
+NETWORK_SEED    = 1
+OUTPUT_FILE     = "log.txt"
 
 # Class definitions ------------------------------------------------------------
 
@@ -91,11 +103,13 @@ class Snake:
     def __init__(self):
         self.head = Box(BOARD_SIZE//2, BOARD_SIZE//2)
         self.body = []
-        self.isAlive = True
+        self.is_alive = True
         self.length = 1
         self.dir = UP
+        if not HUMAN_PLAYER and MAX_AGE > 0:
+            self.age = 0
 
-    def _set_dir(self):
+    def _set_dir(self, food):
         if HUMAN_PLAYER:
             if last_press == K_UP:
                 if self.dir != DOWN: self.dir = UP
@@ -106,17 +120,20 @@ class Snake:
             elif last_press == K_RIGHT:
                 if self.dir != LEFT: self.dir = RIGHT
         else:
-            # Run neural net
-            pass
+            output = AI.run(self.network_inputs(food))
+            decision = output.index(max(output)) - 1
+            # -1 -> left turn, 0 -> forward, 1 -> right turn
+            directions = [UP, RIGHT, DOWN, LEFT]
+            self.dir = directions[(directions.index(self.dir) + decision) % 4]
 
     def move(self, food):
         # Move the snake up, down, left, or right
-        self._set_dir()
+        self._set_dir(food)
         new_head = self.head + self.dir
 
         if new_head in self.body[:-1] or -1 in new_head.coords or BOARD_SIZE in new_head.coords:
             # Collision
-            self.isAlive = False
+            self.is_alive = False
 
         elif new_head == food:
             # Grow snake
@@ -124,12 +141,18 @@ class Snake:
             self.body.append(self.head)
             self.head = new_head
             food.move(self)
+            if not HUMAN_PLAYER and MAX_AGE > 0:
+                self.age = 0
 
         else:
             # Move snake
             self.body.append(self.head)
             self.head = new_head
             del self.body[0]
+            if not HUMAN_PLAYER and MAX_AGE > 0:
+                self.age += 1
+                if self.age > MAX_AGE:
+                    self.is_alive = False
 
     def draw(self, surface):
         # Draw the snake to the display surface
@@ -167,7 +190,7 @@ class Snake:
             food_side = food.y - self.head.y
             food_front = food.x - self.head.x
 
-        return {"forward": forward, "left": left, "right": right, "food side": food_side, "food front": food_front}
+        return [forward, left, right, food_side, food_front]
 
 
 # Helper functions -------------------------------------------------------------
@@ -175,7 +198,7 @@ class Snake:
 # Reset game after game over
 def reset_game():
     global snek, apple
-    random.seed(SEED)
+    random.seed(GAME_SEED)
     snek = Snake()
     apple = Food(snek)
 
@@ -201,7 +224,6 @@ def game_over():
                     pygame.quit()
                     sys.exit()
                 elif event.type == KEYDOWN and event.key == K_SPACE:
-                    reset_game()
                     global last_press
                     last_press = K_UP
                     restart = True
@@ -209,7 +231,14 @@ def game_over():
             clock.tick(FPS)
 
     else:
-        pass
+        score = snek.length + 1.0/float(abs(snek.head.x-apple.x) + abs(snek.head.y-apple.y))
+        if SHOW_BOARD:
+            print("Generation:", AI.generation, "   Network number:", AI.curr_network+1, "   Score:", score)
+        elif AI.curr_network == 0:
+            print("Generation:", AI.generation, "   Score:", score)
+        AI.next(score)
+
+    reset_game()
 
 def update_hud(snake):
     hud.fill(HUD_COLOUR)
@@ -242,9 +271,16 @@ if SHOW_BOARD:
     clock = pygame.time.Clock()
     skip_frames = FPS/SNAKE_SPEED
     count_frames = 0
-    # Other
-    if HUMAN_PLAYER:
-        last_press = K_UP
+# Other
+if HUMAN_PLAYER:
+    last_press = K_UP
+else:
+    # Set up neural networks
+    AI = network.Species(NUM_NETWORKS, DOMINATION_RATE, MUTATION_RATE, network.Network.sigmoid, 5, 3,
+    HIDDEN_LAYERS, HIDDEN_NODES, "rand", NETWORK_SEED, OUTPUT_FILE)
+
+    # (self, num_networks, domination_rate, mutation_rate, activation, inputs, outputs,
+    # hidden_layers, hidden_nodes=0, initialization="rand", seed=None, output_file=None)
 
 reset_game()
 
@@ -260,26 +296,27 @@ while True:
             elif HUMAN_PLAYER and event.type == KEYDOWN and event.key in (K_UP, K_DOWN, K_LEFT, K_RIGHT):
                 last_press = event.key
 
-    if count_frames >= skip_frames:
-        count_frames -= skip_frames
-
-        # Run game logic
-        if snek.isAlive:
-            snek.move(apple)
-        else:
-            game_over()
-
-        if SHOW_BOARD:
+        if count_frames >= skip_frames:
+            count_frames -= skip_frames
+            # Run game logic
+            if snek.is_alive:
+                snek.move(apple)
+            else:
+                game_over()
+            # Update display
             update_hud(snek)
             game_board.fill(BLACK)
             snek.draw(game_board)
             apple.draw(game_board)
-
             screen.blit(hud, (0, 0))
             screen.blit(game_board, (BORDER_WIDTH, HUD_HEIGHT+BORDER_WIDTH))
-
             pygame.display.update()
 
-    if SHOW_BOARD:
         clock.tick(FPS)
         count_frames += 1
+
+    else: # Hidden board
+        if snek.is_alive:
+            snek.move(apple)
+        else:
+            game_over()
