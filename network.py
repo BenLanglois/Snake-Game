@@ -122,7 +122,7 @@ class Species:
                 raise ValueError("Invalid input file")
             i += 1
             biases = []
-            while i < len(split_input):
+            while i < len(split_input) and split_input[i][0] != '#':
                 biases.append(json.loads(split_input[i]))
                 i += 1
 

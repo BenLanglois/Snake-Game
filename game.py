@@ -13,8 +13,8 @@ LIGHT_BLUE = (109,158,237)
 # Game settings ----------------------------------------------------------------
 
 HUMAN_PLAYER  = False
-SHOW_BOARD    = True
-BOARD_SIZE    = 16
+SHOW_BOARD    = False
+BOARD_SIZE    = 25
 BOX_SIZE      = 20
 HUD_HEIGHT    = 40
 HUD_COLOUR    = LIGHT_BLUE
@@ -22,18 +22,18 @@ TEXT_SIZE     = 30
 TEXT_COLOUR   = BLACK
 BORDER_WIDTH  = 5
 BORDER_COLOUR = WHITE
-FPS           = 30
-SNAKE_SPEED   = 10
-GAME_SEED     = 2
+FPS           = 60
+SNAKE_SPEED   = 60
+GAME_SEED     = 3
 
 # Network settings -------------------------------------------------------------
 
 NUM_NETWORKS    = 100
-MAX_AGE         = 100
-DOMINATION_RATE = 0.99
-MUTATION_RATE   = 0.01
-HIDDEN_LAYERS   = 1
-HIDDEN_NODES    = 8
+MAX_AGE         = 75
+DOMINATION_RATE = 0.85
+MUTATION_RATE   = 0.02
+HIDDEN_LAYERS   = 2
+HIDDEN_NODES    = 10
 NETWORK_SEED    = 2
 LOAD_NETWORK    = True
 INPUT_FILE      = "log.txt"
