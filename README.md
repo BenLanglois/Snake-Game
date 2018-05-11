@@ -9,6 +9,6 @@ Todo:
 - [x] Recieve input from player
 - [x] Polish game (Restart after death, display score)
 - [x] Create neural network
-- [ ] Output log to a text file
-- [ ] Allow replay of a specific network
+- [x] Output log to a text file
+- [x] Allow replay of a specific network
 - [ ] Train neural network
