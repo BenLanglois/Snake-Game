@@ -28,6 +28,7 @@ GAME_SEED     = 3
 
 # Network settings -------------------------------------------------------------
 
+LOAD_NETWORK    = True
 NUM_NETWORKS    = 100
 MAX_AGE         = 75
 DOMINATION_RATE = 0.85
@@ -35,7 +36,6 @@ MUTATION_RATE   = 0.02
 HIDDEN_LAYERS   = 2
 HIDDEN_NODES    = 10
 NETWORK_SEED    = 2
-LOAD_NETWORK    = True
 INPUT_FILE      = "log.txt"
 OUTPUT_FILE     = "log.txt"
 
