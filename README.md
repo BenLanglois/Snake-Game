@@ -1,5 +1,7 @@
 # Snake Game
 
+**Video of the highscore:** https://i.imgur.com/HYVrA2k.mp4
+
 This is a recreation of the snake game. It was made using Python 3.6.2 and pygame 1.9.3. The game was designed to be played by either a human or a neural network.
 
 The game is customizable, with all settings found in game.py starting on line 13. You can choose the size of the board, the game speed, whether the game should be played by a human or by the computer, and more. You can also modify the neural network's settings staring on line 29 of game.py.
